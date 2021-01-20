@@ -50,20 +50,75 @@ struct GridView: View {
     
     @ObservedObject var vm = GridViewModel()
     
+    @State var searchText = ""
+    @State var isSearching = false
+    
     var body: some View {
         NavigationView {
-            ScrollView{
-                LazyVGrid(columns: [
-                    GridItem(.flexible(minimum: 50, maximum: 200), spacing: 16, alignment: .top),
-                    GridItem(.flexible(minimum: 50, maximum: 200), spacing: 16, alignment: .top),
-                    GridItem(.flexible(minimum: 50, maximum: 200), spacing: 16, alignment: .top)
-                ], alignment: .leading, spacing: 16, content: {
-                    ForEach(vm.results, id: \.self) { app in
-                        AppInfo(app: app)
+            VStack {
+                HStack {
+                    HStack {
+                        TextField("Type to search...", text:$searchText)
+                            .padding(.leading, 24)
+                        
                     }
+                    .padding()
+                    .background(Color(.systemGray5))
+                    .cornerRadius(8)
+                    .padding(.horizontal)
+                    .onTapGesture(perform: {
+                        isSearching = true
+                    })
+                    .overlay(
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                            Spacer()
+                            
+                            if isSearching {
+                                Button(action: {
+                                    searchText = ""
+                                }, label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .padding(.vertical)
+                                })
+                            }
+                            
+                            
+                        }.padding(.horizontal, 32)
+                        .foregroundColor(.gray)
+                    )
+                    .transition(.move(edge: .trailing))
+                    .animation(.spring())
                     
-                }).padding(.horizontal, 12)
-            }.navigationTitle("Grid Search")
+                    if isSearching {
+                        Button(action: {
+                            isSearching = false
+                            searchText = ""
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        }, label: {
+                            Text("Cancel")
+                                .padding(.trailing)
+                                .padding(.leading, -12)
+                        })
+                        .transition(.move(edge: .trailing))
+                        .animation(.spring())
+                    }
+                }
+                
+                ScrollView{
+                    LazyVGrid(columns: [
+                        GridItem(.flexible(minimum: 50, maximum: 200), spacing: 16, alignment: .top),
+                        GridItem(.flexible(minimum: 50, maximum: 200), spacing: 16, alignment: .top),
+                        GridItem(.flexible(minimum: 50, maximum: 200), spacing: 16, alignment: .top)
+                    ], alignment: .leading, spacing: 16, content: {
+                        ForEach(vm.results.filter({ app in searchText.isEmpty || "\(app.name)".lowercased().contains(searchText.lowercased()) }), id: \.self) { app in
+                            AppInfo(app: app)
+                        }
+                        
+                    }).padding(.horizontal, 12)
+                }.navigationTitle("Grid Search")
+            }
+            
         }
     }
 }
